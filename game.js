@@ -21,7 +21,7 @@ let level = 1;
 let gameOver = false;
 let highScore = 0;
 let fallingBubbles = [];
-let shotsUntilDrop = 8;
+let shotsUntilDrop = 15;
 let shotsFired = 0;
 let ceilingOffset = 0;
 const GAME_OVER_LINE = (ROWS - 1) * BUBBLE_RADIUS * 1.8 + BUBBLE_RADIUS + 10;
@@ -75,6 +75,22 @@ class Bubble {
     }
 }
 
+function getLevelConfig(level) {
+    const configs = {
+        1: { colors: 3, rows: 3, shotsUntilDrop: 15 },
+        2: { colors: 4, rows: 4, shotsUntilDrop: 12 },
+        3: { colors: 5, rows: 4, shotsUntilDrop: 10 },
+        4: { colors: 6, rows: 5, shotsUntilDrop: 9 },
+        5: { colors: 6, rows: 5, shotsUntilDrop: 8 }
+    };
+    return configs[Math.min(level, 5)] || configs[5];
+}
+
+function getColorsForLevel(level) {
+    const config = getLevelConfig(level);
+    return BUBBLE_COLORS.slice(0, config.colors);
+}
+
 function initGame() {
     bubbleGrid = [];
     fallingBubbles = [];
@@ -83,23 +99,33 @@ function initGame() {
     gameOver = false;
     shotsFired = 0;
     ceilingOffset = 0;
+    
+    const config = getLevelConfig(level);
+    shotsUntilDrop = config.shotsUntilDrop;
+    
     loadHighScore();
     updateScore();
     hideModal();
     
-    for (let row = 0; row < 5; row++) {
+    generateBubblesForLevel(level);
+    createNewShooterBubble();
+}
+
+function generateBubblesForLevel(level) {
+    const config = getLevelConfig(level);
+    const levelColors = getColorsForLevel(level);
+    
+    for (let row = 0; row < config.rows; row++) {
         bubbleGrid[row] = [];
         for (let col = 0; col < COLS; col++) {
             if (row % 2 === 0 || col < COLS - 1) {
                 const x = col * (BUBBLE_RADIUS * 2) + BUBBLE_RADIUS + (row % 2 ? BUBBLE_RADIUS : 0);
                 const y = row * (BUBBLE_RADIUS * 1.8) + BUBBLE_RADIUS + 10;
-                const color = BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
+                const color = levelColors[Math.floor(Math.random() * levelColors.length)];
                 bubbleGrid[row][col] = new Bubble(x, y, color, row, col);
             }
         }
     }
-    
-    createNewShooterBubble();
 }
 
 function getAvailableColors() {
@@ -113,7 +139,8 @@ function getAvailableColors() {
         }
     }
     
-    return colorsInGrid.size > 0 ? Array.from(colorsInGrid) : BUBBLE_COLORS;
+    const levelColors = getColorsForLevel(level);
+    return colorsInGrid.size > 0 ? Array.from(colorsInGrid) : levelColors;
 }
 
 function createNewShooterBubble() {
@@ -355,24 +382,14 @@ function checkClear() {
 
 function nextLevel() {
     level++;
-    shotsUntilDrop = Math.max(5, 8 - Math.floor(level / 2));
+    
+    const config = getLevelConfig(level);
+    shotsUntilDrop = config.shotsUntilDrop;
     ceilingOffset = 0;
     shotsFired = 0;
     
-    // 新しいバブルを生成（レベルが上がるごとに増える）
-    const rowsToGenerate = Math.min(5 + Math.floor(level / 3), 8);
-    for (let row = 0; row < rowsToGenerate; row++) {
-        bubbleGrid[row] = [];
-        for (let col = 0; col < COLS; col++) {
-            if (row % 2 === 0 || col < COLS - 1) {
-                const x = col * (BUBBLE_RADIUS * 2) + BUBBLE_RADIUS + (row % 2 ? BUBBLE_RADIUS : 0);
-                const y = row * (BUBBLE_RADIUS * 1.8) + BUBBLE_RADIUS + 10;
-                const color = BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
-                bubbleGrid[row][col] = new Bubble(x, y, color, row, col);
-            }
-        }
-    }
-    
+    bubbleGrid = [];
+    generateBubblesForLevel(level);
     updateScore();
 }
 
