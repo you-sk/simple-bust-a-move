@@ -19,6 +19,7 @@ let projectile = null;
 let score = 0;
 let level = 1;
 let gameOver = false;
+let highScore = 0;
 let fallingBubbles = [];
 let shotsUntilDrop = 8;
 let shotsFired = 0;
@@ -82,7 +83,9 @@ function initGame() {
     gameOver = false;
     shotsFired = 0;
     ceilingOffset = 0;
+    loadHighScore();
     updateScore();
+    hideModal();
     
     for (let row = 0; row < 5; row++) {
         bubbleGrid[row] = [];
@@ -227,10 +230,10 @@ function snapToGrid() {
     
     if (checkGameOver()) {
         gameOver = true;
-        alert(`ゲームオーバー！ スコア: ${score}`);
+        showModal('ゲームオーバー！', `スコア: ${score}`);
     } else if (checkClear()) {
         gameOver = true;
-        alert(`クリア！ スコア: ${score}`);
+        showModal('クリア！', `スコア: ${score}`);
     }
 }
 
@@ -281,7 +284,7 @@ function checkMatches(bubble) {
         
         if (checkClear()) {
             gameOver = true;
-            setTimeout(() => alert(`クリア！ スコア: ${score}`), 100);
+            setTimeout(() => showModal('クリア！', `スコア: ${score}`), 100);
         }
     }
 }
@@ -364,6 +367,7 @@ function dropCeiling() {
 function updateScore() {
     document.getElementById('score').textContent = score;
     document.getElementById('level').textContent = level;
+    document.getElementById('highScore').textContent = highScore;
 }
 
 function draw() {
@@ -448,6 +452,37 @@ canvas.addEventListener('click', () => {
 });
 
 document.getElementById('newGame').addEventListener('click', () => {
+    initGame();
+});
+
+function loadHighScore() {
+    const saved = localStorage.getItem('bubbleShooterHighScore');
+    if (saved) {
+        highScore = parseInt(saved);
+    }
+}
+
+function saveHighScore() {
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('bubbleShooterHighScore', highScore);
+        updateScore();
+    }
+}
+
+function showModal(title, message) {
+    saveHighScore();
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    document.getElementById('modal').style.display = 'block';
+}
+
+function hideModal() {
+    document.getElementById('modal').style.display = 'none';
+}
+
+document.getElementById('modalRestart').addEventListener('click', () => {
+    hideModal();
     initGame();
 });
 
