@@ -20,6 +20,9 @@ let score = 0;
 let level = 1;
 let gameOver = false;
 let fallingBubbles = [];
+let shotsUntilDrop = 8;
+let shotsFired = 0;
+let ceilingOffset = 0;
 const GAME_OVER_LINE = (ROWS - 1) * BUBBLE_RADIUS * 1.8 + BUBBLE_RADIUS + 10;
 
 class Bubble {
@@ -77,6 +80,8 @@ function initGame() {
     score = 0;
     level = 1;
     gameOver = false;
+    shotsFired = 0;
+    ceilingOffset = 0;
     updateScore();
     
     for (let row = 0; row < 5; row++) {
@@ -148,7 +153,7 @@ function drawShooter() {
     if (shooter.nextBubble) {
         ctx.fillStyle = '#ecf0f1';
         ctx.font = '14px Arial';
-        ctx.fillText('NEXT', canvas.width - 55, SHOOTER_Y);
+        ctx.fillText('NEXT', canvas.width - 55, SHOOTER_Y - 10);
         shooter.nextBubble.draw();
     }
 }
@@ -162,6 +167,12 @@ function shootBubble() {
     projectile.vy = -Math.cos(shooter.angle) * speed;
     
     shooter.bubble = null;
+    shotsFired++;
+    
+    if (shotsFired >= shotsUntilDrop) {
+        dropCeiling();
+        shotsFired = 0;
+    }
 }
 
 function checkCollision() {
@@ -177,13 +188,13 @@ function checkCollision() {
         }
     }
     
-    if (projectile.y - projectile.radius <= 0) {
+    if (projectile.y - projectile.radius <= ceilingOffset) {
         snapToGrid();
     }
 }
 
 function snapToGrid() {
-    const row = Math.floor((projectile.y - 10) / (BUBBLE_RADIUS * 1.8));
+    const row = Math.floor((projectile.y - 10 - ceilingOffset) / (BUBBLE_RADIUS * 1.8));
     let col;
     
     if (row % 2 === 0) {
@@ -199,7 +210,7 @@ function snapToGrid() {
     }
     
     const x = col * (BUBBLE_RADIUS * 2) + BUBBLE_RADIUS + (row % 2 ? BUBBLE_RADIUS : 0);
-    const y = row * (BUBBLE_RADIUS * 1.8) + BUBBLE_RADIUS + 10;
+    const y = row * (BUBBLE_RADIUS * 1.8) + BUBBLE_RADIUS + 10 + ceilingOffset;
     
     projectile.x = x;
     projectile.y = y;
@@ -217,6 +228,9 @@ function snapToGrid() {
     if (checkGameOver()) {
         gameOver = true;
         alert(`ゲームオーバー！ スコア: ${score}`);
+    } else if (checkClear()) {
+        gameOver = true;
+        alert(`クリア！ スコア: ${score}`);
     }
 }
 
@@ -264,6 +278,11 @@ function checkMatches(bubble) {
         });
         updateScore();
         removeFloatingBubbles();
+        
+        if (checkClear()) {
+            gameOver = true;
+            setTimeout(() => alert(`クリア！ スコア: ${score}`), 100);
+        }
     }
 }
 
@@ -306,12 +325,40 @@ function markConnected(bubble, connected) {
 }
 
 function checkGameOver() {
-    for (let col = 0; col < COLS; col++) {
-        if (bubbleGrid[ROWS - 1] && bubbleGrid[ROWS - 1][col]) {
-            return true;
+    for (let row = 0; row < bubbleGrid.length; row++) {
+        for (let col = 0; col < COLS; col++) {
+            if (bubbleGrid[row][col]) {
+                const bubbleBottom = bubbleGrid[row][col].y + BUBBLE_RADIUS;
+                if (bubbleBottom >= GAME_OVER_LINE) {
+                    return true;
+                }
+            }
         }
     }
     return false;
+}
+
+function checkClear() {
+    for (let row = 0; row < bubbleGrid.length; row++) {
+        for (let col = 0; col < COLS; col++) {
+            if (bubbleGrid[row][col]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function dropCeiling() {
+    ceilingOffset += BUBBLE_RADIUS * 1.8;
+    
+    for (let row = 0; row < bubbleGrid.length; row++) {
+        for (let col = 0; col < COLS; col++) {
+            if (bubbleGrid[row][col]) {
+                bubbleGrid[row][col].y += BUBBLE_RADIUS * 1.8;
+            }
+        }
+    }
 }
 
 function updateScore() {
@@ -321,6 +368,23 @@ function updateScore() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 天井を描画
+    if (ceilingOffset > 0) {
+        ctx.fillStyle = '#34495e';
+        ctx.fillRect(0, 0, canvas.width, ceilingOffset);
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, ceilingOffset);
+        ctx.lineTo(canvas.width, ceilingOffset);
+        ctx.stroke();
+    }
+    
+    // 次の天井落下までのカウント表示
+    ctx.fillStyle = '#ecf0f1';
+    ctx.font = '14px Arial';
+    ctx.fillText(`Shots until drop: ${shotsUntilDrop - shotsFired}`, 10, 20);
     
     // ゲームオーバーラインを描画
     ctx.strokeStyle = '#e74c3c';
