@@ -2,7 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 const BUBBLE_RADIUS = 20;
-const BUBBLE_COLORS = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f39c12', '#9b59b6', '#1abc9c'];
+const BUBBLE_COLORS = ['#ff6b6b', '#4ecdc4', '#f1c40f', '#e74c3c', '#9b59b6', '#3498db'];
 const ROWS = 12;
 const COLS = 10;
 const SHOOTER_Y = canvas.height - 50;
@@ -18,6 +18,8 @@ let projectile = null;
 let score = 0;
 let level = 1;
 let gameOver = false;
+let fallingBubbles = [];
+const GAME_OVER_LINE = (ROWS - 1) * BUBBLE_RADIUS * 1.8 + BUBBLE_RADIUS + 10;
 
 class Bubble {
     constructor(x, y, color, row = -1, col = -1) {
@@ -55,6 +57,12 @@ class Bubble {
         }
     }
 
+    updateFalling() {
+        this.vy += 0.5;
+        this.x += this.vx;
+        this.y += this.vy;
+    }
+
     distanceTo(other) {
         const dx = this.x - other.x;
         const dy = this.y - other.y;
@@ -64,6 +72,7 @@ class Bubble {
 
 function initGame() {
     bubbleGrid = [];
+    fallingBubbles = [];
     score = 0;
     level = 1;
     gameOver = false;
@@ -240,6 +249,9 @@ function removeFloatingBubbles() {
         for (let col = 0; col < COLS; col++) {
             const bubble = bubbleGrid[row][col];
             if (bubble && !connected.has(`${bubble.row},${bubble.col}`)) {
+                bubble.vx = (Math.random() - 0.5) * 2;
+                bubble.vy = -2;
+                fallingBubbles.push(bubble);
                 bubbleGrid[row][col] = null;
                 score += 20;
                 removed++;
@@ -278,6 +290,21 @@ function updateScore() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // ゲームオーバーラインを描画
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 5]);
+    ctx.beginPath();
+    ctx.moveTo(0, GAME_OVER_LINE);
+    ctx.lineTo(canvas.width, GAME_OVER_LINE);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // 危険ゾーンの警告テキスト
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '12px Arial';
+    ctx.fillText('DANGER LINE', 10, GAME_OVER_LINE - 5);
+    
     for (let row = 0; row < bubbleGrid.length; row++) {
         for (let col = 0; col < COLS; col++) {
             const bubble = bubbleGrid[row][col];
@@ -286,6 +313,13 @@ function draw() {
             }
         }
     }
+    
+    // 落下中のバブルを描画
+    fallingBubbles = fallingBubbles.filter(bubble => {
+        bubble.updateFalling();
+        bubble.draw();
+        return bubble.y < canvas.height + BUBBLE_RADIUS;
+    });
     
     drawShooter();
     
