@@ -231,9 +231,6 @@ function snapToGrid() {
     if (checkGameOver()) {
         gameOver = true;
         showModal('ゲームオーバー！', `スコア: ${score}`);
-    } else if (checkClear()) {
-        gameOver = true;
-        showModal('クリア！', `スコア: ${score}`);
     }
 }
 
@@ -283,8 +280,12 @@ function checkMatches(bubble) {
         removeFloatingBubbles();
         
         if (checkClear()) {
-            gameOver = true;
-            setTimeout(() => showModal('クリア！', `スコア: ${score}`), 100);
+            score += 100 * level;
+            updateScore();
+            setTimeout(() => {
+                nextLevel();
+                createNewShooterBubble();
+            }, 500);
         }
     }
 }
@@ -352,6 +353,29 @@ function checkClear() {
     return true;
 }
 
+function nextLevel() {
+    level++;
+    shotsUntilDrop = Math.max(5, 8 - Math.floor(level / 2));
+    ceilingOffset = 0;
+    shotsFired = 0;
+    
+    // 新しいバブルを生成（レベルが上がるごとに増える）
+    const rowsToGenerate = Math.min(5 + Math.floor(level / 3), 8);
+    for (let row = 0; row < rowsToGenerate; row++) {
+        bubbleGrid[row] = [];
+        for (let col = 0; col < COLS; col++) {
+            if (row % 2 === 0 || col < COLS - 1) {
+                const x = col * (BUBBLE_RADIUS * 2) + BUBBLE_RADIUS + (row % 2 ? BUBBLE_RADIUS : 0);
+                const y = row * (BUBBLE_RADIUS * 1.8) + BUBBLE_RADIUS + 10;
+                const color = BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
+                bubbleGrid[row][col] = new Bubble(x, y, color, row, col);
+            }
+        }
+    }
+    
+    updateScore();
+}
+
 function dropCeiling() {
     ceilingOffset += BUBBLE_RADIUS * 1.8;
     
@@ -385,10 +409,12 @@ function draw() {
         ctx.stroke();
     }
     
-    // 次の天井落下までのカウント表示
+    // 次の天井落下までのカウント表示（右側に移動）
     ctx.fillStyle = '#ecf0f1';
     ctx.font = '14px Arial';
-    ctx.fillText(`Shots until drop: ${shotsUntilDrop - shotsFired}`, 10, 20);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Shots until drop: ${shotsUntilDrop - shotsFired}`, canvas.width - 10, GAME_OVER_LINE + 20);
+    ctx.textAlign = 'left';
     
     // ゲームオーバーラインを描画
     ctx.strokeStyle = '#e74c3c';
