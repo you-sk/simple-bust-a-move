@@ -2,7 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 const BUBBLE_RADIUS = 20;
-const BUBBLE_COLORS = ['#ff6b6b', '#4ecdc4', '#f1c40f', '#e74c3c', '#9b59b6', '#3498db'];
+const BUBBLE_COLORS = ['#ff6b6b', '#4ecdc4', '#f1c40f', '#2ecc71', '#9b59b6', '#3498db'];
 const ROWS = 12;
 const COLS = 10;
 const SHOOTER_Y = canvas.height - 50;
@@ -12,7 +12,8 @@ let shooter = {
     x: canvas.width / 2,
     y: SHOOTER_Y,
     angle: 0,
-    bubble: null
+    bubble: null,
+    nextBubble: null
 };
 let projectile = null;
 let score = 0;
@@ -93,9 +94,32 @@ function initGame() {
     createNewShooterBubble();
 }
 
+function getAvailableColors() {
+    const colorsInGrid = new Set();
+    
+    for (let row = 0; row < bubbleGrid.length; row++) {
+        for (let col = 0; col < COLS; col++) {
+            if (bubbleGrid[row][col]) {
+                colorsInGrid.add(bubbleGrid[row][col].color);
+            }
+        }
+    }
+    
+    return colorsInGrid.size > 0 ? Array.from(colorsInGrid) : BUBBLE_COLORS;
+}
+
 function createNewShooterBubble() {
-    const color = BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
-    shooter.bubble = new Bubble(shooter.x, shooter.y, color);
+    if (shooter.nextBubble) {
+        shooter.bubble = new Bubble(shooter.x, shooter.y, shooter.nextBubble.color);
+    } else {
+        const availableColors = getAvailableColors();
+        const color = availableColors[Math.floor(Math.random() * availableColors.length)];
+        shooter.bubble = new Bubble(shooter.x, shooter.y, color);
+    }
+    
+    const availableColors = getAvailableColors();
+    const nextColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+    shooter.nextBubble = new Bubble(canvas.width - 40, SHOOTER_Y + 20, nextColor);
 }
 
 function drawShooter() {
@@ -118,6 +142,14 @@ function drawShooter() {
         shooter.bubble.x = shooter.x;
         shooter.bubble.y = shooter.y;
         shooter.bubble.draw();
+    }
+    
+    // Nextバブルの表示
+    if (shooter.nextBubble) {
+        ctx.fillStyle = '#ecf0f1';
+        ctx.font = '14px Arial';
+        ctx.fillText('NEXT', canvas.width - 55, SHOOTER_Y);
+        shooter.nextBubble.draw();
     }
 }
 
