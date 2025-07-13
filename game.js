@@ -24,7 +24,118 @@ let fallingBubbles = [];
 let shotsUntilDrop = 15;
 let shotsFired = 0;
 let ceilingOffset = 0;
+let particles = [];
 const GAME_OVER_LINE = (ROWS - 1) * BUBBLE_RADIUS * 1.8 + BUBBLE_RADIUS + 10;
+
+// 効果音システム
+class SoundManager {
+    constructor() {
+        this.audioContext = null;
+        this.sounds = {};
+        this.muted = false;
+        this.initAudio();
+    }
+
+    initAudio() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.log('音声がサポートされていません');
+        }
+    }
+
+    createSound(frequency, duration, type = 'sine', volume = 0.1) {
+        if (!this.audioContext || this.muted) return;
+        
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration);
+        } catch (e) {
+            // エラーを無視
+        }
+    }
+
+    playShoot() {
+        this.createSound(220, 0.1, 'square', 0.05);
+    }
+
+    playPop() {
+        this.createSound(440, 0.2, 'sine', 0.08);
+        setTimeout(() => this.createSound(550, 0.15, 'sine', 0.06), 50);
+    }
+
+    playDrop() {
+        this.createSound(150, 0.3, 'sawtooth', 0.04);
+    }
+
+    playLevelUp() {
+        this.createSound(523, 0.2, 'sine', 0.1);
+        setTimeout(() => this.createSound(659, 0.2, 'sine', 0.1), 200);
+        setTimeout(() => this.createSound(784, 0.3, 'sine', 0.1), 400);
+    }
+
+    playGameOver() {
+        this.createSound(200, 0.5, 'sawtooth', 0.08);
+        setTimeout(() => this.createSound(150, 0.5, 'sawtooth', 0.08), 250);
+        setTimeout(() => this.createSound(100, 0.8, 'sawtooth', 0.08), 500);
+    }
+
+    toggle() {
+        this.muted = !this.muted;
+        return !this.muted;
+    }
+}
+
+const soundManager = new SoundManager();
+
+// パーティクルエフェクトクラス
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 8;
+        this.vy = (Math.random() - 0.5) * 8 - 2;
+        this.life = 1.0;
+        this.decay = 0.02;
+        this.color = color;
+        this.size = Math.random() * 4 + 2;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.1; // 重力
+        this.vx *= 0.98; // 空気抵抗
+        this.life -= this.decay;
+        this.size *= 0.98;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    isDead() {
+        return this.life <= 0 || this.size <= 0.5;
+    }
+}
 
 class Bubble {
     constructor(x, y, color, row = -1, col = -1) {
@@ -191,6 +302,8 @@ function drawShooter() {
 function shootBubble() {
     if (projectile || !shooter.bubble || gameOver) return;
     
+    soundManager.playShoot();
+    
     const speed = 10;
     projectile = shooter.bubble;
     projectile.vx = Math.sin(shooter.angle) * speed;
@@ -257,6 +370,7 @@ function snapToGrid() {
     
     if (checkGameOver()) {
         gameOver = true;
+        soundManager.playGameOver();
         showModal('ゲームオーバー！', `スコア: ${score}`);
     }
 }
@@ -299,7 +413,13 @@ function checkMatches(bubble) {
     const matches = findMatches(bubble, bubble.color);
     
     if (matches.length >= 3) {
+        soundManager.playPop();
+        
         matches.forEach(match => {
+            // パーティクルエフェクトを生成
+            for (let i = 0; i < 8; i++) {
+                particles.push(new Particle(match.x, match.y, match.color));
+            }
             bubbleGrid[match.row][match.col] = null;
             score += 10;
         });
@@ -309,6 +429,7 @@ function checkMatches(bubble) {
         if (checkClear()) {
             score += 100 * level;
             updateScore();
+            soundManager.playLevelUp();
             setTimeout(() => {
                 nextLevel();
                 createNewShooterBubble();
@@ -331,6 +452,11 @@ function removeFloatingBubbles() {
         for (let col = 0; col < COLS; col++) {
             const bubble = bubbleGrid[row][col];
             if (bubble && !connected.has(`${bubble.row},${bubble.col}`)) {
+                // 落下エフェクト用のパーティクル
+                for (let i = 0; i < 5; i++) {
+                    particles.push(new Particle(bubble.x, bubble.y, bubble.color));
+                }
+                
                 bubble.vx = (Math.random() - 0.5) * 2;
                 bubble.vy = -2;
                 fallingBubbles.push(bubble);
@@ -342,6 +468,7 @@ function removeFloatingBubbles() {
     }
     
     if (removed > 0) {
+        soundManager.playDrop();
         updateScore();
     }
 }
@@ -395,6 +522,7 @@ function nextLevel() {
 
 function dropCeiling() {
     ceilingOffset += BUBBLE_RADIUS * 1.8;
+    soundManager.playDrop();
     
     for (let row = 0; row < bubbleGrid.length; row++) {
         for (let col = 0; col < COLS; col++) {
@@ -456,6 +584,13 @@ function draw() {
             }
         }
     }
+    
+    // パーティクルエフェクトを描画
+    particles = particles.filter(particle => {
+        particle.update();
+        particle.draw();
+        return !particle.isDead();
+    });
     
     // 落下中のバブルを描画
     fallingBubbles = fallingBubbles.filter(bubble => {
@@ -528,6 +663,19 @@ document.getElementById('modalRestart').addEventListener('click', () => {
     hideModal();
     initGame();
 });
+
+document.getElementById('soundToggle').addEventListener('click', () => {
+    const isEnabled = soundManager.toggle();
+    const button = document.getElementById('soundToggle');
+    button.textContent = isEnabled ? '🔊 音声ON' : '🔇 音声OFF';
+});
+
+// 初期化時にユーザーインタラクションで音声コンテキストを開始
+document.addEventListener('click', () => {
+    if (soundManager.audioContext && soundManager.audioContext.state === 'suspended') {
+        soundManager.audioContext.resume();
+    }
+}, { once: true });
 
 initGame();
 gameLoop();

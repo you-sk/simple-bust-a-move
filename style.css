@@ -37,9 +37,12 @@ body {
 .game-controls {
     margin-top: 10px;
     text-align: center;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
 }
 
-#newGame {
+#newGame, #soundToggle {
     background-color: #1abc9c;
     color: white;
     border: none;
@@ -50,8 +53,16 @@ body {
     transition: background-color 0.3s;
 }
 
-#newGame:hover {
+#newGame:hover, #soundToggle:hover {
     background-color: #16a085;
+}
+
+#soundToggle {
+    background-color: #3498db;
+}
+
+#soundToggle:hover {
+    background-color: #2980b9;
 }
 
 /* モーダルダイアログのスタイル */
