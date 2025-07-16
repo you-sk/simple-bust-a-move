@@ -2,8 +2,6 @@
 
 HTML5 CanvasとJavaScriptで作られたパズルボブル風のバブルシューティングゲームです。
 
-![バブルシューター](screenshot.png)
-
 ## 特徴
 
 - **段階的な難易度調整**: レベル1から5まで段階的に難易度が上がります
@@ -131,49 +129,4 @@ const configs = {
 
 ## ライセンス
 
-MIT License
-
-Copyright (c) 2025
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-## 更新履歴
-
-### Version 1.1.0 (2025-01-13)
-- 効果音システム追加（Web Audio API）
-- パーティクルエフェクト実装
-- 音声ON/OFF切り替え機能
-- 視覚・聴覚フィードバックの大幅改善
-
-### Version 1.0.0 (2025-01-13)
-- 初回リリース
-- 基本的なバブルシューティング機能
-- レベルシステム実装
-- ハイスコア機能追加
-- モーダルダイアログ実装
-- 段階的難易度調整
-
-## 貢献
-
-バグ報告や機能要望は Issue として投稿してください。
-プルリクエストも歓迎します。
-
----
-
-楽しくプレイしてください！ 🎮
+MIT License で公開しています。
