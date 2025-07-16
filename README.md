@@ -2,6 +2,10 @@
 
 HTML5 CanvasとJavaScriptで作られたパズルボブル風のバブルシューティングゲームです。
 
+<img width="490" height="775" alt="image" src="https://github.com/user-attachments/assets/3e8f320b-ceef-4f07-90ff-3ea655f3c565" />
+
+https://you-sk.github.io/simple-bust-a-move/
+
 ## 特徴
 
 - **段階的な難易度調整**: レベル1から5まで段階的に難易度が上がります
